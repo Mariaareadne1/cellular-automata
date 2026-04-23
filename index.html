@@ -4,35 +4,162 @@
   <meta charset="UTF-8">
   <title>Lab 5 - Cellular Automata</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      background: #111;
-      color: #eee;
+      background: #ff2d9b;
+      color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 40px 20px;
+      margin: 0;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
     }
     canvas {
-      border: 1px solid #444;
-      margin-top: 20px;
+      margin-top: 30px;
     }
     button {
       margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 10px 28px;
+      font-size: 14px;
+      background: transparent;
+      color: white;
+      border: 1px solid white;
       cursor: pointer;
+    }
+    button:hover {
+      background: white;
+      color: #ff2d9b;
     }
   </style>
 </head>
 <body>
 
   <h1>Cellular Automata Composition</h1>
-  <button id="startBtn">Generate & Play</button>
-  <canvas id="grid" width="600" height="400"></canvas>
+  <button id="startBtn">Generate &amp; Play</button>
+  <canvas id="grid"></canvas>
 
   <script>
-    // We'll build everything here
-    console.log("Lab 5 loaded!");
+    // ============================================================
+    // GRID CONFIGURATION
+    // ============================================================
+    const CELL_SIZE = 20;  // perfectly square cells
+    const COLS = 40;
+    const ROWS = 20;
+    const GENERATIONS = 40;
+
+    // size the canvas exactly to fit the grid with no gaps
+    const canvas = document.getElementById('grid');
+    canvas.width  = COLS * CELL_SIZE;
+    canvas.height = ROWS * CELL_SIZE;
+    const ctx = canvas.getContext('2d');
+
+    // ============================================================
+    // CREATE GRID
+    // ============================================================
+    function createGrid() {
+      return Array.from({ length: ROWS }, () =>
+        Array.from({ length: COLS }, () =>
+          Math.random() < 0.3 ? 1 : 0
+        )
+      );
+    }
+
+    // ============================================================
+    // COUNT NEIGHBORS (wraps around edges)
+    // ============================================================
+    function countNeighbors(grid, row, col) {
+      let count = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const r = (row + dr + ROWS) % ROWS;
+          const c = (col + dc + COLS) % COLS;
+          count += grid[r][c];
+        }
+      }
+      return count;
+    }
+
+    // ============================================================
+    // ADVANCE ONE GENERATION
+    // ============================================================
+    function nextGeneration(grid) {
+      return grid.map((row, r) =>
+        row.map((cell, c) => {
+          const neighbors = countNeighbors(grid, r, c);
+          if (cell === 1) {
+            return (neighbors === 2 || neighbors === 3) ? 1 : 0;
+          } else {
+            return neighbors === 3 ? 1 : 0;
+          }
+        })
+      );
+    }
+
+    // ============================================================
+    // RUN FULL SIMULATION, STORE EVERY GENERATION
+    // ============================================================
+    function runSimulation() {
+      const history = [];
+      let grid = createGrid();
+      for (let i = 0; i < GENERATIONS; i++) {
+        history.push(grid);
+        grid = nextGeneration(grid);
+      }
+      return history;
+    }
+
+    // ============================================================
+    // DRAW A SINGLE GENERATION
+    // ============================================================
+    function drawGrid(grid) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          ctx.fillStyle = grid[r][c] === 1 ? '#ffffff' : '#ff2d9b';
+          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+      }
+    }
+
+    // ============================================================
+    // DRAW FIRST GENERATION ON LOAD
+    // ============================================================
+    const history = runSimulation();
+    drawGrid(history[0]);
+
+    // ============================================================
+    // ANIMATE THROUGH GENERATIONS ON BUTTON CLICK
+    // ============================================================
+    let animationInterval = null;
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      // if already running, stop it and reset
+      if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+      }
+
+      // re-run simulation so each click gives a fresh random result
+      const history = runSimulation();
+      let gen = 0;
+
+      animationInterval = setInterval(() => {
+        drawGrid(history[gen]);
+        gen++;
+
+        if (gen >= history.length) {
+          clearInterval(animationInterval);
+          animationInterval = null;
+        }
+      }, 120); // 120ms between generations
+    });
   </script>
 
 </body>
