@@ -48,16 +48,27 @@
     // ============================================================
     // GRID CONFIGURATION
     // ============================================================
-    const CELL_SIZE = 20;  // perfectly square cells
+    const CELL_SIZE = 20;
     const COLS = 40;
     const ROWS = 20;
     const GENERATIONS = 40;
 
-    // size the canvas exactly to fit the grid with no gaps
     const canvas = document.getElementById('grid');
     canvas.width  = COLS * CELL_SIZE;
     canvas.height = ROWS * CELL_SIZE;
     const ctx = canvas.getContext('2d');
+
+    // ============================================================
+    // PENTATONIC SCALE FREQUENCIES
+    // 20 notes, one per row — low at bottom, high at top
+    // C D E G A repeated across 4 octaves
+    // ============================================================
+    const NOTES = [
+      130.81, 146.83, 164.81, 196.00, 220.00, // octave 3
+      261.63, 293.66, 329.63, 392.00, 440.00, // octave 4
+      523.25, 587.33, 659.25, 783.99, 880.00, // octave 5
+      1046.5, 1174.7, 1318.5, 1568.0, 1760.0  // octave 6
+    ];
 
     // ============================================================
     // CREATE GRID
@@ -129,36 +140,107 @@
     }
 
     // ============================================================
+    // SCHEDULE AUDIO FOR THE ENTIRE SIMULATION
+    //
+    // How this works:
+    // - Each generation = one "beat" in time
+    // - BEAT_DURATION = how many seconds each beat lasts
+    // - For each generation, we look at every row
+    // - If that cell is ON (1), we schedule a note to play
+    //   at exactly (startTime + generation * BEAT_DURATION)
+    // - We use an oscillator for the tone and a GainNode to
+    //   control volume and create a soft fade-out (envelope)
+    // ============================================================
+    function scheduleAudio(history, audioCtx) {
+      const BEAT_DURATION = 0.12; // seconds per generation (matches 120ms visual)
+      const NOTE_DURATION = 0.10; // how long each note rings (slightly shorter than beat)
+      const startTime = audioCtx.currentTime + 0.05; // tiny delay so first beat isn't clipped
+
+      history.forEach((grid, genIndex) => {
+        // when does this generation's beat start?
+        const beatTime = startTime + genIndex * BEAT_DURATION;
+
+        grid.forEach((row, rowIndex) => {
+          // we only care about the FIRST column of each generation
+          // (each generation is one snapshot — column 0 is our "trigger")
+          // Actually we read whether any cell in this row is alive
+          // by checking the whole row — but for rhythm we just use
+          // column 0 of each generation as the beat trigger per row
+          if (grid[rowIndex][0] === 1) {
+            // look up the frequency for this row
+            // row 0 = lowest note, row 19 = highest note
+            const frequency = NOTES[rowIndex];
+
+            // --- OSCILLATOR ---
+            // creates the actual tone at the given frequency
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine'; // sine = soft/pure tone (try 'square' for harsher retro sound)
+            osc.frequency.value = frequency;
+
+            // --- GAIN NODE (volume envelope) ---
+            // we ramp the volume down over the note duration
+            // so notes fade out instead of cutting off abruptly
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.15, beatTime);           // start at volume 0.15
+            gain.gain.exponentialRampToValueAtTime(0.001, beatTime + NOTE_DURATION); // fade to near-zero
+
+            // --- CONNECT THE CHAIN ---
+            // oscillator → gain → speakers
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            // --- SCHEDULE START AND STOP ---
+            osc.start(beatTime);
+            osc.stop(beatTime + NOTE_DURATION);
+          }
+        });
+      });
+    }
+
+    // ============================================================
     // DRAW FIRST GENERATION ON LOAD
     // ============================================================
     const history = runSimulation();
     drawGrid(history[0]);
 
     // ============================================================
-    // ANIMATE THROUGH GENERATIONS ON BUTTON CLICK
+    // BUTTON CLICK — RUN ANIMATION + AUDIO TOGETHER
     // ============================================================
     let animationInterval = null;
+    let audioCtx = null;
 
     document.getElementById('startBtn').addEventListener('click', () => {
-      // if already running, stop it and reset
+      // stop any existing animation
       if (animationInterval) {
         clearInterval(animationInterval);
         animationInterval = null;
       }
 
-      // re-run simulation so each click gives a fresh random result
-      const history = runSimulation();
-      let gen = 0;
+      // create AudioContext on first click (browsers require user gesture)
+      // if it already exists, reuse it
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
 
+      // resume in case browser suspended it
+      audioCtx.resume();
+
+      // run a fresh simulation
+      const history = runSimulation();
+
+      // schedule ALL the audio up front using Web Audio's precise clock
+      scheduleAudio(history, audioCtx);
+
+      // animate visually in sync (120ms matches BEAT_DURATION of 0.12s)
+      let gen = 0;
       animationInterval = setInterval(() => {
         drawGrid(history[gen]);
         gen++;
-
         if (gen >= history.length) {
           clearInterval(animationInterval);
           animationInterval = null;
         }
-      }, 120); // 120ms between generations
+      }, 120);
     });
   </script>
 
