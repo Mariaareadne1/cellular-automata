@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blog - Cellular Automata Composition</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #ffffff;
+      color: #ff2d9b;
+      font-family: Georgia, serif;
+      font-size: 17px;
+      line-height: 1.85;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin: 32px 0 0 40px;
+      font-size: 13px;
+      color: #ff2d9b;
+      text-decoration: none;
+      border: 1px solid #ff2d9b;
+      padding: 6px 16px;
+      border-radius: 4px;
+      font-family: sans-serif;
+      transition: background 0.2s, color 0.2s;
+    }
+    .back-btn:hover {
+      background: #ff2d9b;
+      color: white;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    h1 {
+      font-size: 2.1rem;
+      line-height: 1.25;
+      margin-bottom: 10px;
+      color: #ff2d9b;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #ff80c4;
+      font-family: sans-serif;
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-top: 52px;
+      margin-bottom: 12px;
+      font-family: sans-serif;
+      color: #ff2d9b;
+    }
+
+    p {
+      margin-bottom: 22px;
+      color: #cc1a7a;
+    }
+
+    code {
+      background: #fff0f8;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 14px;
+      color: #ff2d9b;
+    }
+
+    /* ---- interactive explainer embed ---- */
+    .explainer-wrap {
+      margin: 32px 0;
+      border: 1px solid #ffb3d9;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff8fc;
+      padding: 20px;
+    }
+    .explainer-label {
+      font-family: sans-serif;
+      font-size: 12px;
+      color: #ff80c4;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ---- CA explainer styles (self-contained) ---- */
+    .grid-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+    .note-lbl { font-size: 11px; color: #ff80c4; width: 30px; text-align: right; flex-shrink: 0; font-family: sans-serif; }
+    .cell {
+      width: 20px; height: 20px; border-radius: 3px; flex-shrink: 0;
+      transition: background 0.15s, transform 0.12s;
+    }
+    .cell.alive  { background: #ff2d9b; }
+    .cell.dead   { background: #ffe0f2; }
+    .cell.trigger { outline: 2px solid #ff2d9b; outline-offset: 1px; transform: scale(1.15); }
+    .col-header  { display: flex; gap: 5px; margin-bottom: 3px; padding-left: 35px; }
+    .col-marker  { width: 20px; text-align: center; font-size: 10px; color: #ffb3d9; font-family: sans-serif; }
+    .playing-lbl { font-size: 12px; color: #ff2d9b; min-height: 18px; margin-top: 8px; font-family: sans-serif; }
+    .ex-controls { display: flex; gap: 10px; margin-top: 12px; }
+    .ex-btn {
+      font-size: 12px; padding: 5px 14px;
+      background: transparent; border: 1px solid #ff2d9b;
+      border-radius: 4px; color: #ff2d9b; cursor: pointer;
+      font-family: sans-serif;
+    }
+    .ex-btn:hover { background: #ff2d9b; color: white; }
+    .ex-legend { display: flex; gap: 14px; font-size: 11px; color: #ff80c4; margin-top: 10px; align-items: center; font-family: sans-serif; }
+    .ex-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+  <a class="back-btn" href="index.html">← Back</a>
+
+  <div class="container">
+
+    <h1>What Happens When You Let a Grid Compose Your Music</h1>
+    <p class="subtitle">A look at cellular automata as a tool for automated composition</p>
+
+    <p>
+      When I first encountered cellular automata as an option for this project, I understood the name
+      and not much else. I picked it anyway — and what followed was probably the most unexpectedly
+      engaging rabbit hole I've gone down. Before writing a single line of code I spent hours watching
+      videos and reading about how these simulations work, not because I had to, but because I genuinely
+      couldn't stop.
+    </p>
+
+    <h2>What is a cellular automaton?</h2>
+
+    <p>
+      A cellular automaton is a grid of cells, each either alive (on) or dead (off). At every step —
+      called a generation — each cell looks at its eight neighbors and decides whether to live or die
+      based on a simple ruleset. The most famous version is Conway's Game of Life, whose rules are:
+    </p>
+
+    <p>
+      A live cell with 2 or 3 live neighbors survives. A dead cell with exactly 3 live neighbors
+      becomes alive. Everything else dies or stays dead.
+    </p>
+
+    <p>
+      That's it. Three rules. And yet from those three rules emerge gliders that travel across the
+      grid, oscillators that pulse in place, and stable structures that sit completely still while chaos
+      unfolds around them. None of this behavior is programmed in — it all emerges on its own, which is
+      what makes cellular automata so fascinating to watch.
+    </p>
+
+    <h2>How the simulation maps to music</h2>
+
+    <p>
+      The core idea is simple: treat the grid as a musical score. Each <strong>row</strong> corresponds
+      to a pitch, and each <strong>generation</strong> corresponds to a beat in time. At every beat, the
+      code checks which cells in the leftmost column are alive, and plays those notes simultaneously
+      using the Web Audio API. Low rows play low notes, high rows play high notes.
+    </p>
+
+    <p>
+      Step through the interactive demo below to see exactly how this works. The outlined left column
+      is the trigger — only cells in that column fire notes on each beat.
+    </p>
+
+    <!-- ── INTERACTIVE EXPLAINER ── -->
+    <div class="explainer-wrap">
+      <div class="explainer-label">Interactive — step through generations to see which notes play</div>
+      <div style="font-size:12px;color:#ff80c4;font-family:sans-serif;margin-bottom:10px;">
+        Generation <span id="gen-num">0</span> of 7 &nbsp;·&nbsp; column 0 (outlined) is the trigger
+      </div>
+      <div class="col-header" id="col-header"></div>
+      <div id="grid-container"></div>
+      <div class="playing-lbl" id="playing-lbl">Click "Next" to step through generations</div>
+      <div class="ex-controls">
+        <button class="ex-btn" onclick="stepGen()">Next generation →</button>
+        <button class="ex-btn" onclick="resetGrid()">Reset</button>
+      </div>
+      <div class="ex-legend">
+        <div style="display:flex;align-items:center;gap:4px"><div class="ex-dot" style="background:#ff2d9b"></div> alive → plays a note</div>
+        <div style="display:flex;align-items:center;gap:4px"><div class="ex-dot" style="background:#ffe0f2;border:1px solid #ffb3d9"></div> dead → silence</div>
+        <div style="display:flex;align-items:center;gap:4px"><div class="ex-dot" style="outline:2px solid #ff2d9b;background:#fff8fc"></div> trigger column</div>
+      </div>
+    </div>
+
+    <p>
+      The audio scheduling itself is handled by the Web Audio API's internal clock via
+      <code>AudioContext.currentTime</code>. Rather than triggering notes inside a
+      <code>setInterval</code> loop — which drifts — all 40 beats are scheduled up front at precise
+      timestamps. Web Audio fires them with sample-accurate timing regardless of what else the browser
+      is doing.
+    </p>
+
+    <h2>The density problem I didn't expect</h2>
+
+    <p>
+      One surprising discovery: starting density directly affects how long the piece lasts. Pack the
+      initial grid too densely and the Game of Life rules cause an immediate population collapse — too
+      many neighbors means too many cells die in the first few generations, and the grid goes quiet fast.
+      A sparse grid stabilizes into patterns that persist much longer. So the density control ended up
+      being less about "more notes versus fewer notes" and more about "how quickly does this piece burn
+      out." That felt like a genuine musical insight that came directly from understanding the simulation.
+    </p>
+
+    <h2>How different combinations feel</h2>
+
+    <p>
+      The tool has three controls: oscillator type (the waveform shape — sine, square, sawtooth,
+      triangle), scale (pentatonic, minor, major, chromatic, whole tone), and density. They interact in
+      interesting ways. A sine wave over a pentatonic scale at low density sounds almost ambient and
+      peaceful. Switch to sawtooth with the chromatic scale at high density and it becomes genuinely
+      chaotic — harsh, clashing, unpredictable. The square wave feels retro, which suits the pixelated
+      grid aesthetic well.
+    </p>
+
+    <h2>Does it feel like music?</h2>
+
+    <p>
+      Honestly — not in the way music made by people feels. There's no melody, no tension building
+      toward resolution, no sense that any note was chosen. Knowing the output comes from a grid
+      simulation makes it hard to hear as expressive. But it's not nothing either. There's a texture
+      to it, an automated electronic quality with its own character. Some combinations produce
+      something that feels almost rhythmic, almost intentional — and that near-miss quality is what
+      makes it interesting. Algorithms can't compose the way people do, but they produce things people
+      never would, and sometimes that's enough to be worth listening to.
+    </p>
+
+  </div>
+
+  <script>
+    const ROWS = 6, COLS = 7;
+    const NOTE_NAMES = ['C3','D3','E3','G3','A3','C4'];
+    const SEED = [
+      [1,0,1,0,0,1,0],
+      [0,1,0,0,1,0,1],
+      [1,1,0,1,0,0,0],
+      [0,0,1,0,1,1,0],
+      [1,0,0,1,0,0,1],
+      [0,1,1,0,0,1,0],
+    ];
+    let history = [], currentGen = 0;
+
+    function countNeighbors(grid, r, c) {
+      let n = 0;
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr===0 && dc===0) continue;
+          n += grid[(r+dr+ROWS)%ROWS][(c+dc+COLS)%COLS];
+        }
+      return n;
+    }
+    function nextGen(grid) {
+      return grid.map((row,r) => row.map((cell,c) => {
+        const n = countNeighbors(grid,r,c);
+        return cell ? (n===2||n===3?1:0) : (n===3?1:0);
+      }));
+    }
+    function buildHistory() {
+      history = [];
+      let g = SEED.map(r=>[...r]);
+      for (let i=0;i<8;i++) { history.push(g); g=nextGen(g); }
+    }
+    function buildColHeader() {
+      const h = document.getElementById('col-header');
+      h.innerHTML = '';
+      for (let c=0;c<COLS;c++) {
+        const d = document.createElement('div');
+        d.className = 'col-marker';
+        d.textContent = c===0 ? '▼' : c;
+        if (c===0) d.style.color='#ff2d9b';
+        h.appendChild(d);
+      }
+    }
+    function render(gen) {
+      const grid = history[gen];
+      const container = document.getElementById('grid-container');
+      container.innerHTML = '';
+      const playingRows = [];
+      for (let r=0;r<ROWS;r++) if (grid[r][0]===1) playingRows.push(r);
+      for (let r=ROWS-1;r>=0;r--) {
+        const row = document.createElement('div');
+        row.className = 'grid-row';
+        const lbl = document.createElement('div');
+        lbl.className = 'note-lbl';
+        lbl.textContent = NOTE_NAMES[r];
+        row.appendChild(lbl);
+        for (let c=0;c<COLS;c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell ' + (grid[r][c]===1 ? 'alive' : 'dead');
+          if (c===0) cell.classList.add('trigger');
+          row.appendChild(cell);
+        }
+        container.appendChild(row);
+      }
+      document.getElementById('gen-num').textContent = gen;
+      const lbl = document.getElementById('playing-lbl');
+      if (playingRows.length === 0) {
+        lbl.textContent = 'Generation '+gen+': column 0 all dead → silence this beat';
+      } else {
+        lbl.textContent = 'Generation '+gen+' plays: ' + playingRows.map(r=>NOTE_NAMES[r]).join(', ');
+      }
+    }
+    function stepGen() {
+      currentGen = (currentGen + 1) % history.length;
+      render(currentGen);
+    }
+    function resetGrid() {
+      currentGen = 0;
+      render(0);
+    }
+    buildHistory();
+    buildColHeader();
+    render(0);
+  </script>
+
+</body>
+</html>

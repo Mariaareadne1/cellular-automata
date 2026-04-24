@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <title>Lab 5 - Cellular Automata</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       background: #ff2d9b;
       color: white;
@@ -16,12 +14,7 @@
       padding: 40px 20px;
       margin: 0;
     }
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 20px;
-    }
-
-    /* controls panel */
+    h1 { font-size: 1.4rem; margin-bottom: 20px; }
     .controls {
       display: flex;
       flex-direction: column;
@@ -39,14 +32,8 @@
       justify-content: space-between;
       gap: 12px;
     }
-    .control-row label {
-      font-size: 14px;
-      min-width: 80px;
-    }
-    .control-row input[type="range"] {
-      flex: 1;
-      accent-color: white;
-    }
+    .control-row label { font-size: 14px; min-width: 80px; }
+    .control-row input[type="range"] { flex: 1; accent-color: white; }
     .control-row select {
       flex: 1;
       background: rgba(0,0,0,0.2);
@@ -56,17 +43,8 @@
       font-size: 14px;
       border-radius: 4px;
     }
-    .control-row select option {
-      background: #cc0077;
-      color: white;
-    }
-    .value-label {
-      font-size: 13px;
-      min-width: 40px;
-      text-align: right;
-      opacity: 0.85;
-    }
-
+    .control-row select option { background: #cc0077; color: white; }
+    .value-label { font-size: 13px; min-width: 40px; text-align: right; opacity: 0.85; }
     button {
       margin-top: 4px;
       padding: 10px 28px;
@@ -76,13 +54,18 @@
       border: 1px solid white;
       cursor: pointer;
     }
-    button:hover {
-      background: white;
-      color: #ff2d9b;
+    button:hover { background: white; color: #ff2d9b; }
+    canvas { margin-top: 24px; }
+    .blog-link {
+      margin-top: 32px;
+      font-size: 13px;
+      color: white;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.5);
+      opacity: 0.8;
+      transition: opacity 0.2s;
     }
-    canvas {
-      margin-top: 24px;
-    }
+    .blog-link:hover { opacity: 1; }
   </style>
 </head>
 <body>
@@ -90,46 +73,38 @@
   <h1>Cellular Automata Composition</h1>
 
   <div class="controls">
-
-    <!-- OSCILLATOR TYPE -->
     <div class="control-row">
       <label>Instrument</label>
       <select id="oscType">
-        <option value="sine">Sine — smooth / flute</option>
-        <option value="square" selected>Square — retro / game</option>
-        <option value="sawtooth">Sawtooth — bright / synth</option>
-        <option value="triangle">Triangle — soft / hollow</option>
+        <option value="sine">Sine</option>
+        <option value="square" selected>Square</option>
+        <option value="sawtooth">Sawtooth</option>
+        <option value="triangle">Triangle</option>
       </select>
     </div>
-
-    <!-- SCALE PICKER -->
     <div class="control-row">
       <label>Scale</label>
       <select id="scaleType">
-        <option value="pentatonic" selected>Pentatonic — always pleasant</option>
-        <option value="minor">Minor — dark / moody</option>
-        <option value="major">Major — bright / happy</option>
-        <option value="chromatic">Chromatic — chaotic / dissonant</option>
-        <option value="wholetone">Whole tone — dreamy / floaty</option>
+        <option value="pentatonic" selected>Pentatonic</option>
+        <option value="minor">Minor</option>
+        <option value="major">Major</option>
+        <option value="chromatic">Chromatic</option>
+        <option value="wholetone">Whole Tone</option>
       </select>
     </div>
-
-    <!-- DENSITY SLIDER -->
     <div class="control-row">
       <label>Density</label>
       <input type="range" id="density" min="5" max="75" value="30" step="5">
       <span class="value-label" id="densityLabel">30%</span>
     </div>
-
   </div>
 
   <button id="startBtn">Generate &amp; Play</button>
   <canvas id="grid"></canvas>
 
+  <a class="blog-link" href="blog.html">Read the blog post →</a>
+
   <script>
-    // ============================================================
-    // GRID CONFIGURATION
-    // ============================================================
     const CELL_SIZE = 20;
     const COLS = 40;
     const ROWS = 20;
@@ -140,39 +115,29 @@
     canvas.height = ROWS * CELL_SIZE;
     const ctx = canvas.getContext('2d');
 
-    // ============================================================
-    // SCALES
-    // Each scale has 20 frequencies (one per row), low to high.
-    // Built from real Hz values across 4 octaves.
-    // ============================================================
     const SCALES = {
-      // C D E G A  (5 notes per octave, always consonant)
       pentatonic: [
         130.81, 146.83, 164.81, 196.00, 220.00,
         261.63, 293.66, 329.63, 392.00, 440.00,
         523.25, 587.33, 659.25, 783.99, 880.00,
         1046.5, 1174.7, 1318.5, 1568.0, 1760.0
       ],
-      // C D Eb F G Ab Bb  (natural minor, darker feel)
       minor: [
         130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08,
         261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16,
         523.25, 587.33, 622.25, 698.46, 783.99, 830.61
       ],
-      // C D E F G A B  (major scale, bright and happy)
       major: [
         130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94,
         261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88,
         523.25, 587.33, 659.25, 698.46, 783.99, 880.00
       ],
-      // all 12 semitones — very dissonant and unpredictable
       chromatic: [
         130.81, 138.59, 146.83, 155.56, 164.81, 174.61,
         184.99, 196.00, 207.65, 220.00, 233.08, 246.94,
         261.63, 277.18, 293.66, 311.13, 329.63, 349.23,
         369.99, 392.00
       ],
-      // C D E F# G# A#  (whole tone, dreamy/impressionist)
       wholetone: [
         130.81, 146.83, 164.81, 184.99, 207.65, 233.08,
         261.63, 293.66, 329.63, 369.99, 415.30, 466.16,
@@ -181,71 +146,42 @@
       ]
     };
 
-    // ============================================================
-    // READ CONTROLS
-    // ============================================================
-    function getOscType() {
-      return document.getElementById('oscType').value;
-    }
-    function getNotes() {
-      return SCALES[document.getElementById('scaleType').value];
-    }
-    function getDensity() {
-      return parseInt(document.getElementById('density').value) / 100;
-    }
+    function getOscType() { return document.getElementById('oscType').value; }
+    function getNotes()   { return SCALES[document.getElementById('scaleType').value]; }
+    function getDensity() { return parseInt(document.getElementById('density').value) / 100; }
 
-    // live update density label
     document.getElementById('density').addEventListener('input', (e) => {
       document.getElementById('densityLabel').textContent = e.target.value + '%';
     });
 
-    // ============================================================
-    // CREATE GRID  (uses density from slider)
-    // ============================================================
     function createGrid() {
       const density = getDensity();
       return Array.from({ length: ROWS }, () =>
-        Array.from({ length: COLS }, () =>
-          Math.random() < density ? 1 : 0
-        )
+        Array.from({ length: COLS }, () => Math.random() < density ? 1 : 0)
       );
     }
 
-    // ============================================================
-    // COUNT NEIGHBORS (wraps around edges)
-    // ============================================================
     function countNeighbors(grid, row, col) {
       let count = 0;
-      for (let dr = -1; dr <= 1; dr++) {
+      for (let dr = -1; dr <= 1; dr++)
         for (let dc = -1; dc <= 1; dc++) {
           if (dr === 0 && dc === 0) continue;
           const r = (row + dr + ROWS) % ROWS;
           const c = (col + dc + COLS) % COLS;
           count += grid[r][c];
         }
-      }
       return count;
     }
 
-    // ============================================================
-    // ADVANCE ONE GENERATION
-    // ============================================================
     function nextGeneration(grid) {
       return grid.map((row, r) =>
         row.map((cell, c) => {
-          const neighbors = countNeighbors(grid, r, c);
-          if (cell === 1) {
-            return (neighbors === 2 || neighbors === 3) ? 1 : 0;
-          } else {
-            return neighbors === 3 ? 1 : 0;
-          }
+          const n = countNeighbors(grid, r, c);
+          return cell ? (n===2||n===3?1:0) : (n===3?1:0);
         })
       );
     }
 
-    // ============================================================
-    // RUN FULL SIMULATION
-    // ============================================================
     function runSimulation() {
       const history = [];
       let grid = createGrid();
@@ -256,47 +192,34 @@
       return history;
     }
 
-    // ============================================================
-    // DRAW A SINGLE GENERATION
-    // ============================================================
     function drawGrid(grid) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let r = 0; r < ROWS; r++) {
+      for (let r = 0; r < ROWS; r++)
         for (let c = 0; c < COLS; c++) {
           ctx.fillStyle = grid[r][c] === 1 ? '#ffffff' : '#ff2d9b';
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
-      }
     }
 
-    // ============================================================
-    // SCHEDULE AUDIO  (reads oscType and scale from controls)
-    // ============================================================
     function scheduleAudio(history, audioCtx) {
       const BEAT_DURATION = 0.12;
       const NOTE_DURATION = 0.10;
       const startTime = audioCtx.currentTime + 0.05;
-      const notes = getNotes();       // which scale?
-      const oscType = getOscType();   // which instrument?
+      const notes = getNotes();
+      const oscType = getOscType();
 
       history.forEach((grid, genIndex) => {
         const beatTime = startTime + genIndex * BEAT_DURATION;
-
         grid.forEach((row, rowIndex) => {
           if (grid[rowIndex][0] === 1) {
-            const frequency = notes[rowIndex];
-
             const osc = audioCtx.createOscillator();
-            osc.type = oscType;          // sine / square / sawtooth / triangle
-            osc.frequency.value = frequency;
-
+            osc.type = oscType;
+            osc.frequency.value = notes[rowIndex];
             const gain = audioCtx.createGain();
             gain.gain.setValueAtTime(0.15, beatTime);
             gain.gain.exponentialRampToValueAtTime(0.001, beatTime + NOTE_DURATION);
-
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-
             osc.start(beatTime);
             osc.stop(beatTime + NOTE_DURATION);
           }
@@ -304,40 +227,23 @@
       });
     }
 
-    // ============================================================
-    // DRAW FIRST GENERATION ON LOAD
-    // ============================================================
     const history = runSimulation();
     drawGrid(history[0]);
 
-    // ============================================================
-    // BUTTON CLICK — RUN ANIMATION + AUDIO TOGETHER
-    // ============================================================
     let animationInterval = null;
     let audioCtx = null;
 
     document.getElementById('startBtn').addEventListener('click', () => {
-      if (animationInterval) {
-        clearInterval(animationInterval);
-        animationInterval = null;
-      }
-
-      if (!audioCtx) {
-        audioCtx = new AudioContext();
-      }
+      if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+      if (!audioCtx) audioCtx = new AudioContext();
       audioCtx.resume();
-
       const history = runSimulation();
       scheduleAudio(history, audioCtx);
-
       let gen = 0;
       animationInterval = setInterval(() => {
         drawGrid(history[gen]);
         gen++;
-        if (gen >= history.length) {
-          clearInterval(animationInterval);
-          animationInterval = null;
-        }
+        if (gen >= history.length) { clearInterval(animationInterval); animationInterval = null; }
       }, 120);
     });
   </script>
